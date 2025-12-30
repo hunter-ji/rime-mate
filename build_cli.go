@@ -7,7 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"rime-mate/modules/ohMyRime"
+	"rime-mate/module/ohMyRime"
 )
 
 // Styles
