@@ -20,6 +20,9 @@ jobs:
       with:
         go-version-file: 'go.mod'
 
+    - name: Vendor dependencies
+      run: go mod vendor
+
     - name: Build
       run: |
         chmod +x build.sh
