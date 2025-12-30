@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # ================= 配置区 =================
-VERSION="v1.0.0"
-BASE_URL=""
+REPO="hunter-ji/rime-mate"
+BASE_URL="https://github.com/$REPO/releases/latest/download"
 TOOL_NAME="rime-mate"
 
 # 所有文件都放在 Rime 配置目录下
@@ -31,15 +31,49 @@ case $ARCH in
     *) echo "❌ 不支持的架构"; exit 1 ;;
 esac
 
-NEED_DOWNLOAD=true
-if [ -f "$BINARY_PATH" ] && [ -f "$VERSION_FILE" ]; then
-    if [ "$(cat "$VERSION_FILE")" == "$VERSION" ]; then
-        NEED_DOWNLOAD=false
+# --- 步骤A: 环境检测与版本检查 ---
+MISSING_FILES=false
+# 检查三个关键文件是否存在：快捷方式、二进制文件、版本文件
+if [ ! -f "$COMMAND_LINK" ] || [ ! -f "$BINARY_PATH" ] || [ ! -f "$VERSION_FILE" ]; then
+    MISSING_FILES=true
+fi
+
+if [ "$MISSING_FILES" = true ]; then
+    echo "✨ 检测到首次安装或文件缺失，正在获取版本信息..."
+else
+    echo "🔍 环境完整，正在检查更新..."
+fi
+
+# 获取最新版本号
+LATEST_VERSION=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+
+NEED_DOWNLOAD=false
+VERSION_TO_WRITE=""
+
+if [ -z "$LATEST_VERSION" ]; then
+    echo "⚠️ 无法获取最新版本信息，将尝试强制安装..."
+    NEED_DOWNLOAD=true
+    VERSION_TO_WRITE="unknown"
+else
+    VERSION_TO_WRITE="$LATEST_VERSION"
+    
+    if [ "$MISSING_FILES" = true ]; then
+        echo "⬇️ 准备下载版本: $LATEST_VERSION"
+        NEED_DOWNLOAD=true
+    else
+        LOCAL_VERSION=$(cat "$VERSION_FILE")
+        if [ "$LOCAL_VERSION" == "$LATEST_VERSION" ]; then
+            echo "✅ 当前已是最新版本 ($LOCAL_VERSION)"
+            NEED_DOWNLOAD=false
+        else
+            echo "⬆️ 发现新版本 ($LOCAL_VERSION -> $LATEST_VERSION)"
+            NEED_DOWNLOAD=true
+        fi
     fi
 fi
 
 if [ "$NEED_DOWNLOAD" = true ]; then
-    echo "⬇️ 正在下载最新版本..."
+    echo "⬇️ 正在下载..."
     
     # 1. 检查一下RIME_CONFIG_DIR文件夹是否存在，如果存在则继续，不存在则创建
     if [ ! -d "$RIME_CONFIG_DIR" ]; then
@@ -54,7 +88,7 @@ if [ "$NEED_DOWNLOAD" = true ]; then
         exit 1
     fi
 
-    echo "$VERSION" > "$VERSION_FILE"
+    echo "$VERSION_TO_WRITE" > "$VERSION_FILE"
     
     # 设置可执行权限并移除 macOS 隔离属性（避免首次运行时弹出安全警告）
     chmod +x "$BINARY_PATH"
@@ -96,4 +130,4 @@ EOF
 fi
 
 # --- 步骤C: 打开配置文件夹 ---
-"$RIME_DIR"
+open "$RIME_DIR"
