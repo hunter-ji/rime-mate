@@ -13,10 +13,10 @@ OUTPUT="rime-mate"
 # GOOS=darwin GOARCH=arm64 - for Apple Silicon (M1/M2/M3)
 
 echo "Building for Apple Silicon (arm64)..."
-GOOS=darwin GOARCH=arm64 go build -mod=vendor -o "${OUTPUTPATH}/${OUTPUT}-arm64" .
+GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -mod=vendor -o "${OUTPUTPATH}/${OUTPUT}-arm64" .
 
 echo "Building for Intel (amd64)..."
-GOOS=darwin GOARCH=amd64 go build -mod=vendor -o "${OUTPUTPATH}/${OUTPUT}-amd64" .
+GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -mod=vendor -o "${OUTPUTPATH}/${OUTPUT}-amd64" .
 
 if [ $? -eq 0 ]; then
     echo "✓ Build successful!"
