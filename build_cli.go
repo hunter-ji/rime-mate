@@ -52,6 +52,7 @@ func initialModel() model {
 		mintMenu: []item{
 			{title: "安装 (即将到来)", disabled: true},
 			{title: "安装万象语言模型", disabled: false},
+			{title: "卸载万象语言模型", disabled: false},
 			{title: "配置 (即将到来)", disabled: true},
 			{title: "返回", disabled: false},
 		},
@@ -109,6 +110,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				case "安装万象语言模型":
 					m.choice = "install_wanxiang"
 					return m, tea.Quit
+				case "卸载万象语言模型":
+					m.choice = "uninstall_wanxiang"
+					return m, tea.Quit
 				}
 			}
 		}
@@ -156,7 +160,8 @@ func handleActions() {
 	}
 
 	m := finalModel.(model)
-	if m.choice == "install_wanxiang" {
+	switch m.choice {
+	case "install_wanxiang":
 		fmt.Println("\n🚀 正在准备安装万象语言模型...")
 
 		// 调用安装函数
@@ -166,5 +171,15 @@ func handleActions() {
 		}
 
 		fmt.Println("✅ 万象语言模型安装完成！请重新部署输入法以应用更改。")
+	case "uninstall_wanxiang":
+		fmt.Println("\n🚀 正在准备卸载万象语言模型...")
+
+		// 调用卸载函数
+		if uninstallError := ohMyRime.RemoveLangModel(); uninstallError != nil {
+			fmt.Printf("❌ 卸载失败: %v\n", uninstallError)
+			os.Exit(1)
+		}
+
+		fmt.Println("✅ 万象语言模型卸载完成！请重新部署输入法以应用更改。")
 	}
 }
