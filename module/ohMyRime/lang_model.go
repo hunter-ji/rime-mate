@@ -151,13 +151,21 @@ func RemoveLangModel() error {
 		return nil
 	}
 
-	// 更新 config 中的 patch
-	config[patchIndex].Value = newPatchSlice
+	if len(newPatchSlice) == 0 {
+		// 如果 patch 为空，则从 config 中移除 patch 字段
+		config = append(config[:patchIndex], config[patchIndex+1:]...)
+	} else {
+		// 更新 config 中的 patch
+		config[patchIndex].Value = newPatchSlice
+	}
 
 	// 写入文件
-	data, err := yaml.Marshal(config)
-	if err != nil {
-		return err
+	var data []byte
+	if len(config) > 0 {
+		data, err = yaml.Marshal(config)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = os.WriteFile(rimeMintCustomYamlPath, data, 0644)
