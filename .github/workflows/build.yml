@@ -35,5 +35,6 @@ jobs:
         files: |
           output/rime-mate-arm64
           output/rime-mate-amd64
+          setup.sh
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
