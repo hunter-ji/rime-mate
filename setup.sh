@@ -23,7 +23,6 @@ if [ ! -d "$RIME_DIR" ]; then
     exit 1
 fi
 
-# --- 步骤A: 智能下载/更新逻辑 (同上，不再赘述，保持不变) ---
 ARCH=$(uname -m)
 case $ARCH in
     x86_64) FILE_NAME="${TOOL_NAME}-amd64" ;;
@@ -113,10 +112,8 @@ fi
 
 # 运行程序
 ./rime-mate-config/$TOOL_NAME
-# 等待用户查看输出
+
 echo ""
-echo "按任意键关闭窗口..."
-read -n 1 -s
 EOF
 
     # 给这个文件赋予运行权限
