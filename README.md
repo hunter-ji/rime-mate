@@ -20,7 +20,7 @@ Rime 是一款极具可玩性的输入法，但其复杂的配置文件劝退了
 打开你的“终端”应用 (Terminal)，复制并运行以下命令：
 
 ```bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/hunter-ji/rime-mate/main/setup.sh)"
+/bin/bash -c "$(curl -fsSL https://github.com/hunter-ji/rime-mate/releases/latest/download/setup.sh)"
 ```
 
 脚本会自动下载最新版本，并在你的 Rime 配置目录中创建一个快捷方式。
