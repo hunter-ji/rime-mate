@@ -28,8 +28,10 @@ const (
 )
 
 type item struct {
-	title    string
-	disabled bool
+	id        int
+	title     string
+	disabled  bool
+	belongsTo int
 }
 
 type model struct {
@@ -45,16 +47,17 @@ func initialModel() model {
 		state:  viewMain,
 		cursor: 1, // Default to "薄荷输入法" since the first one is disabled
 		mainMenu: []item{
-			{title: "雾凇拼音 (即将到来)", disabled: true},
-			{title: "薄荷输入法", disabled: false},
-			{title: "退出", disabled: false},
+			{id: 0, title: "雾凇拼音 (即将到来)", disabled: true, belongsTo: -1},
+			{id: 1, title: "薄荷输入法", disabled: false, belongsTo: -1},
+			{id: 2, title: "退出", disabled: false, belongsTo: -1},
 		},
 		mintMenu: []item{
-			{title: "安装 (即将到来)", disabled: true},
-			{title: "安装万象语言模型", disabled: false},
-			{title: "卸载万象语言模型", disabled: false},
-			{title: "配置 (即将到来)", disabled: true},
-			{title: "返回", disabled: false},
+			{id: 100, title: "安装 (即将到来)", disabled: true, belongsTo: -1},
+			{id: 101, title: "更新词库 (即将到来)", disabled: true, belongsTo: -1},
+			{id: 102, title: "安装万象语言模型", disabled: false, belongsTo: 1},
+			{id: 103, title: "卸载万象语言模型", disabled: false, belongsTo: 1},
+			{id: 104, title: "配置 (即将到来)", disabled: true, belongsTo: -1},
+			{id: 105, title: "返回", disabled: false, belongsTo: -1},
 		},
 	}
 }
@@ -98,7 +101,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				switch selectedItem.title {
 				case "薄荷输入法":
 					m.state = viewMint
-					m.cursor = 1 // Default to "安装万象语言模型"
+					m.cursor = 2 // Default to "安装万象语言模型"
 				case "退出":
 					return m, tea.Quit
 				}
@@ -171,6 +174,7 @@ func handleActions() {
 		}
 
 		fmt.Println("✅ 万象语言模型安装完成！请重新部署输入法以应用更改。")
+
 	case "uninstall_wanxiang":
 		fmt.Println("\n🚀 正在准备卸载万象语言模型...")
 
