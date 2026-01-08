@@ -38,7 +38,7 @@ jobs:
           GOARCH=$(echo $target | cut -d' ' -f2)
           BIN_NAME="rime-mate-${GOOS}-${GOARCH}"
           echo "🔨 Compiling ${BIN_NAME} (GOOS=${GOOS}, GOARCH=${GOARCH})"
-          CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} go build -o output/${BIN_NAME} ./cmd/rime-mate
+          CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} go build -o output/${BIN_NAME} .
           if [ ! -f "output/${BIN_NAME}" ]; then
             echo "❌ Compilation of ${BIN_NAME} failed"
             exit 1
