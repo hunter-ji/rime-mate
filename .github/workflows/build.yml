@@ -19,22 +19,45 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version-file: 'go.mod'
+        cache: true
 
     - name: Vendor dependencies
       run: go mod vendor
 
-    - name: Build
+    - name: Cross compile
       run: |
-        chmod +x build.sh
-        ./build.sh
+        mkdir -p output
+        declare -a targets=(
+          "linux amd64"
+          "linux arm64"
+          "darwin amd64"
+          "darwin arm64"
+        )
+        for target in "${targets[@]}"; do
+          GOOS=$(echo $target | cut -d' ' -f1)
+          GOARCH=$(echo $target | cut -d' ' -f2)
+          BIN_NAME="rime-mate-${GOOS}-${GOARCH}"
+          echo "🔨 Compiling ${BIN_NAME} (GOOS=${GOOS}, GOARCH=${GOARCH})"
+          CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} go build -o output/${BIN_NAME} ./cmd/rime-mate
+          if [ ! -f "output/${BIN_NAME}" ]; then
+            echo "❌ Compilation of ${BIN_NAME} failed"
+            exit 1
+          fi
+          chmod +x output/${BIN_NAME}
+        done
+
+    - name: Copy setup.sh to output
+      run: cp setup.sh output/
 
     - name: Create Draft Release
       uses: softprops/action-gh-release@v1
       with:
         draft: true
         files: |
-          output/rime-mate-arm64
-          output/rime-mate-amd64
-          setup.sh
+          output/rime-mate-linux-amd64
+          output/rime-mate-linux-arm64
+          output/rime-mate-darwin-amd64
+          output/rime-mate-darwin-arm64
+          output/setup.sh
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
