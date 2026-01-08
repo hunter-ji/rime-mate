@@ -23,11 +23,11 @@ detect_rime_dir() {
             echo "   - $home/.config/ibus/rime (存在? 否)"
         fi
         if [ -z "$rime_dir" ]; then
-            if [ -d "$home/.local/share/fcitx5/rime" ]; then
-                echo "   - $home/.local/share/fcitx5/rime (存在? 是)"
-                rime_dir="$home/.local/share/fcitx5/rime"
+            if [ -d "$home/.config/fcitx5/rime" ]; then
+                echo "   - $home/.config/fcitx5/rime (存在? 是)"
+                rime_dir="$home/.config/fcitx5/rime"
             else
-                echo "   - $home/.local/share/fcitx5/rime (存在? 否)"
+                echo "   - $home/.config/fcitx5/rime (存在? 否)"
             fi
         fi
         if [ -z "$rime_dir" ]; then
