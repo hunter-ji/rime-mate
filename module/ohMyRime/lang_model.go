@@ -60,9 +60,27 @@ func getCrossPlatformRimeDir() (string, error) {
 		)
 		output, err := cmd.Output()
 		if err == nil {
-			fields := strings.Fields(string(output))
-			if len(fields) > 0 {
-				regPath := fields[len(fields)-1]
+			lines := strings.Split(string(output), "\n")
+			for _, line := range lines {
+				line = strings.TrimSpace(line)
+				if line == "" || !strings.Contains(line, "RimeUserDir") {
+					continue
+				}
+				// Typical format: RimeUserDir    REG_SZ    C:\Path\To\Directory
+				parts := strings.Fields(line)
+				if len(parts) < 2 {
+					continue
+				}
+				valueType := parts[1]
+				typeIndex := strings.Index(line, valueType)
+				if typeIndex == -1 {
+					continue
+				}
+				valuePart := strings.TrimSpace(line[typeIndex+len(valueType):])
+				if valuePart == "" {
+					continue
+				}
+				regPath := valuePart
 				if _, err := os.Stat(regPath); err == nil {
 					return regPath, nil
 				}
