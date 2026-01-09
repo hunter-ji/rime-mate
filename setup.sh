@@ -185,10 +185,10 @@ EOF
 
     echo "✅ 快捷方式已创建：$COMMAND_LINK"
     if [ "$(uname -s)" = "Darwin" ]; then
-        echo "🛠️ 打开 RIME 配置目录后，双击运行 'Rime配置助手.command' 即可运行配置助手。"
+        echo "🛠️ 打开 RIME 配置目录后，双击 'Rime配置助手.command' 即可启动配置助手。"
     fi
     if [ "$(uname -s)" = "Linux" ]; then
-        echo "🛠️ 打开 RIME 配置目录后，双击运行 'Rime配置助手.desktop' 即可运行配置助手。"
+        echo "🛠️ 打开 RIME 配置目录后，双击 'Rime配置助手.desktop' 即可启动配置助手。"
     fi
 fi
 
