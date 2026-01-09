@@ -34,10 +34,10 @@ GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -mod=vendor -o "${OUTPUTPATH}/
 if [ $? -eq 0 ]; then
     echo "✓ Build successful!"
     echo "Executable files:"
-    echo "  ./output/${OUTPUT}-darwin-arm64"
     echo "  ./output/${OUTPUT}-darwin-amd64"
-    echo "  ./output/${OUTPUT}-linux-arm64"
+    echo "  ./output/${OUTPUT}-darwin-arm64"
     echo "  ./output/${OUTPUT}-linux-amd64"
+    echo "  ./output/${OUTPUT}-linux-arm64"
 else
     echo "✗ Build failed"
     exit 1
