@@ -16,7 +16,13 @@ Write-Host "✅ 已检测到小狼毫"
 
 # ---------- Rime 目录 ----------
 $userKey = "HKCU:\Software\Rime\Weasel"
-$rimeDir = (Get-ItemProperty -Path $userKey -Name RimeUserDir -ErrorAction SilentlyContinue).RimeUserDir
+try {
+    $rimeProps = Get-ItemProperty -Path $userKey -Name RimeUserDir -ErrorAction Stop
+} catch {
+    Write-Host "❌ 读取注册表中的 Rime 用户目录失败：$($_.Exception.Message)"
+    exit 1
+}
+$rimeDir = $rimeProps.RimeUserDir
 if (-not $rimeDir -or -not (Test-Path $rimeDir)) {
     Write-Host "❌ 未找到 Rime 用户目录"
     exit 1
