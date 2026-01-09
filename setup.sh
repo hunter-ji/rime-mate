@@ -5,23 +5,9 @@ REPO="hunter-ji/rime-mate"
 BASE_URL="https://github.com/$REPO/releases/latest/download"
 TOOL_NAME="rime-mate"
 
-detect_system() {
-    case "$(uname -s)" in
-        Darwin)
-            echo "Darwin"
-            ;;
-        Linux)
-            echo "Linux"
-            ;;
-        *)
-            echo "UNKNOWN"
-            ;;
-    esac
-}
-
 detect_rime_dir() {
     home="$HOME"
-    system="$(detect_system)"
+    system="$(uname -s)"
 
     case "$system" in
     Darwin)
@@ -29,7 +15,7 @@ detect_rime_dir() {
         ;;
     Linux)
         rime_dir=""
-        echo "🔍 正在检查 Linux 下的 Rime 配置路径："
+        echo "🔍 正在检查Linux下的RIME配置路径："
         if [ -d "$home/.config/ibus/rime" ]; then
             echo "   - $home/.config/ibus/rime (存在? 是)"
             rime_dir="$home/.config/ibus/rime"
@@ -45,41 +31,43 @@ detect_rime_dir() {
             fi
         fi
         if [ -z "$rime_dir" ]; then
-            echo "❌ Linux 下未找到 Rime 配置目录，请先安装 IBus-Rime/Fcitx5-Rime"
+            echo "❌ Linux 下未找到 RIME 配置目录，请先安装 IBus-RIME/Fcitx5-RIME"
             exit 1
         fi
         ;;
     *)
-        echo "❌ 不支持的操作系统"
+        echo "❌ 不支持的操作系统: $(uname -s)"
         exit 1
         ;;
     esac
 
-    echo "✅ 检测到 Rime 配置目录：$rime_dir"
+    if [ ! -d "$rime_dir" ]; then
+        echo "❌ 未检测到 Rime 配置目录: $rime_dir"
+        echo "请先安装对应系统的 Rime 输入法（macOS：鼠须管；Linux：IBus-RIME/Fcitx5-RIME）"
+        exit 1
+    fi
+    echo "✅ 检测到 RIME 配置目录：$rime_dir"
     export RIME_DIR="$rime_dir"
 }
 
 echo "⏳ 正在准备环境..."
 detect_rime_dir
 
-system="$(detect_system)"
+# 所有文件都放在 Rime 配置目录下
+system="$(uname -s)"
 if [ "$system" = "Darwin" ]; then
     COMMAND_LINK="$RIME_DIR/Rime配置助手.command"
-elif [ "$system" = "Linux" ]; then
-    COMMAND_LINK="$RIME_DIR/Rime配置助手.desktop"
 else
-    echo "❌ 不支持的操作系统"
-    exit 1
+    COMMAND_LINK="$RIME_DIR/Rime配置助手.desktop"
 fi
 
 RIME_CONFIG_DIR="$RIME_DIR/rime-mate-config"
 BINARY_PATH="$RIME_CONFIG_DIR/$TOOL_NAME"
-
 VERSION_FILE="$RIME_CONFIG_DIR/version"
 # =========================================
 
 get_os_arch() {
-    system="$(detect_system)"
+    system="$(uname -s)"
     arch="$(uname -m)"
 
     case "$system" in
@@ -98,20 +86,49 @@ get_os_arch() {
 }
 FILE_NAME="$(get_os_arch)"
 
-# --- 步骤A: 版本检测 ---
+# --- 步骤A: 环境检测与版本检查 ---
 MISSING_FILES=false
-[ ! -f "$COMMAND_LINK" ] && MISSING_FILES=true
-[ ! -f "$BINARY_PATH" ] && MISSING_FILES=true
-[ ! -f "$VERSION_FILE" ] && MISSING_FILES=true
+if [ ! -f "$COMMAND_LINK" ] || [ ! -f "$BINARY_PATH" ] || [ ! -f "$VERSION_FILE" ]; then
+    MISSING_FILES=true
+fi
+
+if [ "$MISSING_FILES" = true ]; then
+    echo "✨ 检测到首次安装或文件缺失，正在获取版本信息..."
+else
+    echo "🔍 环境完整，正在检查更新..."
+fi
 
 LATEST_VERSION="$(curl -s "https://api.github.com/repos/$REPO/releases/latest" \
     | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p')"
 
+if [ -z "$LATEST_VERSION" ]; then
+    echo "⚠️ 版本信息获取失败，可能是网络或代理问题，将尝试不使用代理获取版本信息"
+    LATEST_VERSION="$(curl -s --noproxy "*" "https://api.github.com/repos/$REPO/releases/latest" \
+        | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p')"
+fi
+
 NEED_DOWNLOAD=false
-if [ "$MISSING_FILES" = true ]; then
+VERSION_TO_WRITE=""
+
+if [ -z "$LATEST_VERSION" ]; then
+    echo "⚠️ 无法获取最新版本信息，将尝试强制安装..."
     NEED_DOWNLOAD=true
-elif [ "$(cat "$VERSION_FILE")" != "$LATEST_VERSION" ]; then
-    NEED_DOWNLOAD=true
+    VERSION_TO_WRITE="unknown"
+else
+    VERSION_TO_WRITE="$LATEST_VERSION"
+    if [ "$MISSING_FILES" = true ]; then
+        echo "⬇️ 准备下载版本: $LATEST_VERSION"
+        NEED_DOWNLOAD=true
+    else
+        LOCAL_VERSION="$(cat "$VERSION_FILE")"
+        if [ "$LOCAL_VERSION" = "$LATEST_VERSION" ]; then
+            echo "✅ 当前已是最新版本 ($LOCAL_VERSION)"
+            NEED_DOWNLOAD=false
+        else
+            echo "⬆️ 发现新版本 ($LOCAL_VERSION -> $LATEST_VERSION)"
+            NEED_DOWNLOAD=true
+        fi
+    fi
 fi
 
 if [ "$NEED_DOWNLOAD" = true ]; then
@@ -119,40 +136,71 @@ if [ "$NEED_DOWNLOAD" = true ]; then
     mkdir -p "$RIME_CONFIG_DIR"
     curl -L "$BASE_URL/$FILE_NAME" -o "$BINARY_PATH"
 
-    [ ! -s "$BINARY_PATH" ] && echo "❌ 下载失败" && exit 1
+    if [ ! -s "$BINARY_PATH" ]; then
+        echo "❌ 下载失败或文件为空，请检查网络连接或服务器状态。"
+        rm -f "$BINARY_PATH"
+        exit 1
+    fi
 
-    echo "$LATEST_VERSION" > "$VERSION_FILE"
+    echo "$VERSION_TO_WRITE" > "$VERSION_FILE"
     chmod +x "$BINARY_PATH"
 
-    if [ "$system" = "Darwin" ]; then
+    if [ "$(uname -s)" = "Darwin" ]; then
         xattr -d com.apple.quarantine "$BINARY_PATH" 2>/dev/null
     fi
 fi
 
-# --- 步骤B: 生成快捷方式 ---
+# --- 步骤B: 在 Rime 配置目录生成“快捷方式” ---
+
 if [ ! -f "$COMMAND_LINK" ]; then
-    if [ "$system" = "Darwin" ]; then
+    echo "🖥️ 正在 Rime 配置目录生成快捷方式..."
+
+    if [ "$(uname -s)" = "Darwin" ]; then
         cat <<EOF > "$COMMAND_LINK"
 #!/bin/bash
-cd "$RIME_DIR"
+TARGET_DIR="$RIME_DIR"
+if [ "\$(pwd)" != "\$TARGET_DIR" ]; then
+    cd "\$TARGET_DIR"
+fi
 ./rime-mate-config/$TOOL_NAME
+echo ""
 EOF
-    elif [ "$system" = "Linux" ]; then
+    else
         cat <<EOF > "$COMMAND_LINK"
 [Desktop Entry]
 Type=Application
 Name=Rime配置助手
-Exec=sh -c 'cd "$RIME_DIR" && ./rime-mate-config/$TOOL_NAME'
+Exec=sh -c 'cd "$RIME_DIR" && ./rime-mate-config/$TOOL_NAME';
 Terminal=true
+Icon=utilities-terminal
+Categories=Utility;
 EOF
     fi
 
     chmod +x "$COMMAND_LINK"
+
+    if [ "$(uname -s)" = "Darwin" ]; then
+        xattr -d com.apple.quarantine "$COMMAND_LINK" 2>/dev/null
+    fi
+
+    echo "✅ 快捷方式已创建：$COMMAND_LINK"
+    if [ "$(uname -s)" = "Darwin" ]; then
+        echo "🛠️ 打开 RIME 配置目录后，双击 'Rime配置助手.command' 即可启动配置助手。"
+    fi
+    if [ "$(uname -s)" = "Linux" ]; then
+        echo "🛠️ 打开 RIME 配置目录后，双击 'Rime配置助手.desktop' 即可启动配置助手。"
+    fi
 fi
 
-# --- 步骤C: 打开配置目录 ---
-echo "📂 正在打开 Rime 配置目录..."
-case "$system" in
+# --- 步骤C: 打开配置文件夹 ---
+echo "📂 正在打开 RIME 配置目录..."
+case "$(uname -s)" in
     Darwin) open "$RIME_DIR" ;;
-    Linux) command -v xdg-open >/dev/null && xdg-open "$RIME_DIR" ;;
+    Linux)
+        if command -v xdg-open >/dev/null 2>&1; then
+            xdg-open "$RIME_DIR"
+        else
+            echo "⚠️ 未找到 xdg-open，无法自动打开文件夹，手动路径：$RIME_DIR"
+        fi
+        ;;
 esac
