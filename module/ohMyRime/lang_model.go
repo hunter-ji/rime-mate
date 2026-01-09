@@ -2,19 +2,20 @@ package ohMyRime
 
 import (
 	"fmt"
-	"github.com/goccy/go-yaml"
 	"os"
 	"path/filepath"
 	"rime-mate/util"
 	"runtime"
 	"slices"
+
+	"github.com/goccy/go-yaml"
 )
 
 func loadResourceURLs() (string, string) {
 	rimeDir, err := getCrossPlatformRimeDir()
 	if err != nil {
-		util.Error("获取RIME配置目录失败: " + err.Error())
-		rimeDir = util.TransformPath("~/Library/Rime/")
+		util.Error("获取 Rime 配置目录失败: " + err.Error())
+		os.Exit(1)
 	}
 
 	langModelPath := filepath.Join(rimeDir, "wanxiang-lts-zh-hans.gram")
@@ -31,7 +32,11 @@ func getCrossPlatformRimeDir() (string, error) {
 
 	switch runtime.GOOS {
 	case "darwin":
-		return filepath.Join(home, "Library/Rime"), nil
+		path := filepath.Join(home, "Library/Rime")
+		if _, err := os.Stat(path); err == nil {
+			return path, nil
+		}
+		return "", fmt.Errorf("未找到 macOS 下的 Rime 配置目录")
 	case "linux":
 		paths := []string{
 			filepath.Join(home, ".config/ibus/rime"),
@@ -42,7 +47,13 @@ func getCrossPlatformRimeDir() (string, error) {
 				return p, nil
 			}
 		}
-		return "", fmt.Errorf("未找到Linux下的RIME配置目录，请检查是否安装IBus-RIME/Fcitx5-RIME")
+		return "", fmt.Errorf("未找到 Linux 下的 Rime 配置目录，请检查是否安装 iBus-Rime/Fcitx5-Rime")
+	case "windows":
+		path := filepath.Join(home, "AppData/Roaming/Rime")
+		if _, err := os.Stat(path); err == nil {
+			return path, nil
+		}
+		return "", fmt.Errorf("未找到 Windows 下的 Rime 配置目录")
 	default:
 		return "", fmt.Errorf("不支持的系统: %s", runtime.GOOS)
 	}

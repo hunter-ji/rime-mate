@@ -3,61 +3,49 @@ name: Build and Release
 on:
   push:
     tags:
-    - "v*"
+      - "v*"
   workflow_dispatch:
+
 permissions:
   contents: write
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v5
-      with:
-        go-version-file: 'go.mod'
-        cache: true
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
 
-    - name: Vendor dependencies
-      run: go mod vendor
+      - name: Vendor dependencies
+        run: go mod vendor
 
-    - name: Cross compile
-      run: |
-        mkdir -p output
-        declare -a targets=(
-          "linux amd64"
-          "linux arm64"
-          "darwin amd64"
-          "darwin arm64"
-        )
-        for target in "${targets[@]}"; do
-          GOOS=$(echo $target | cut -d' ' -f1)
-          GOARCH=$(echo $target | cut -d' ' -f2)
-          BIN_NAME="rime-mate-${GOOS}-${GOARCH}"
-          echo "🔨 Compiling ${BIN_NAME} (GOOS=${GOOS}, GOARCH=${GOARCH})"
-          CGO_ENABLED=0 GOOS=${GOOS} GOARCH=${GOARCH} go build -o output/${BIN_NAME} .
-          if [ ! -f "output/${BIN_NAME}" ]; then
-            echo "❌ Compilation of ${BIN_NAME} failed"
-            exit 1
-          fi
-          chmod +x output/${BIN_NAME}
-        done
+      - name: Make build.sh executable
+        run: chmod +x build.sh
 
-    - name: Copy setup.sh to output
-      run: cp setup.sh output/
+      - name: Run build script
+        run: ./build.sh
 
-    - name: Create Draft Release
-      uses: softprops/action-gh-release@v1
-      with:
-        draft: true
-        files: |
-          output/rime-mate-linux-amd64
-          output/rime-mate-linux-arm64
-          output/rime-mate-darwin-amd64
-          output/rime-mate-darwin-arm64
-          output/setup.sh
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Copy setup.sh to output
+        run: cp setup.sh output/
+
+      - name: Create Draft Release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          files: |
+            output/rime-mate-darwin-amd64
+            output/rime-mate-darwin-arm64
+            output/rime-mate-linux-amd64
+            output/rime-mate-linux-arm64
+            output/rime-mate-windows-amd64.exe
+            output/rime-mate-windows-arm64.exe
+            output/setup.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
