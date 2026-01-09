@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # ================= 配置区 =================
 REPO="hunter-ji/rime-mate"

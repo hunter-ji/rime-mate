@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export CGO_ENABLED=0
+
 # Build script - Compile for macOS executable + Linux executable
 echo "Building rime-mate..."
 
@@ -29,6 +31,15 @@ GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -mod=vendor -o "${OUTPUTPATH}/
 echo "Building for Linux ARM64 (aarch64)..."
 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -mod=vendor -o "${OUTPUTPATH}/${OUTPUT}-linux-arm64" .
 
+# Build for Windows executable
+# GOOS=windows GOARCH=amd64 - for x86_64 Windows
+# GOOS=windows GOARCH=arm64 - for ARM64 Windows (arm64)
+
+echo "Building for Windows x86_64..."
+GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -mod=vendor -o "${OUTPUTPATH}/${OUTPUT}-windows-amd64.exe" .
+
+echo "Building for Windows ARM64 (arm64)..."
+GOOS=windows GOARCH=arm64 go build -ldflags="-s -w" -mod=vendor -o "${OUTPUTPATH}/${OUTPUT}-windows-arm64.exe" .
 
 
 if [ $? -eq 0 ]; then
@@ -38,6 +49,8 @@ if [ $? -eq 0 ]; then
     echo "  ./output/${OUTPUT}-darwin-arm64"
     echo "  ./output/${OUTPUT}-linux-amd64"
     echo "  ./output/${OUTPUT}-linux-arm64"
+    echo "  ./output/${OUTPUT}-windows-amd64.exe"
+    echo "  ./output/${OUTPUT}-windows-arm64.exe"
 else
     echo "✗ Build failed"
     exit 1

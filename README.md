@@ -1,6 +1,6 @@
 # Rime Mate (Rime 配置助手)
 
-**让 macOS/Linux 上的 Rime (鼠须管/中州韻) 输入法配置变得简单、直观、可视化。**
+**让 macOS/Linux/Windows 上的 Rime (中州韻) 输入法配置变得简单、直观、可视化。**
 
 ![Rime Mate 截图](./rime-mate.jpg)
 
@@ -17,11 +17,21 @@ Rime 是一款极具可玩性的输入法，但其复杂的配置文件劝退了
 
 ### 1. 安装
 
-打开你的“终端”应用 (Terminal)，复制并运行以下命令：
+- **macOS/Linux用户:**
 
-```bash
-/bin/bash -c "$(curl -fsSL https://github.com/hunter-ji/rime-mate/releases/latest/download/setup.sh)"
-```
+  打开你的“终端”应用 (Terminal)，复制并运行以下命令：
+
+  ```bash
+  /bin/bash -c "$(curl -fsSL https://github.com/hunter-ji/rime-mate/releases/latest/download/setup.sh)"
+  ```
+  
+- **Windows用户：**
+  
+  按 `Win + R` 打开运行对话框，输入 `powershell` 并按 `Enter` 打开，复制并运行以下命令：
+  ```shell
+  powershell -NoProfile -ExecutionPolicy Bypass -Command `
+  "irm https://github.com/hunter-ji/rime-mate/releases/latest/download/setup.ps1 | iex"
+  ```
 
 脚本会自动下载最新版本，并在你的 Rime 配置目录中创建一个快捷方式。
 
@@ -37,6 +47,10 @@ Rime 是一款极具可玩性的输入法，但其复杂的配置文件劝退了
     1. 打开 Rime 配置文件夹（iBus: `~/.config/ibus/rime`， Fcitx5: `~/.local/share/fcitx5/rime`）。
     2. 你会看到一个名为 **`Rime配置助手.desktop`** 的文件，**双击运行**它。
     3. 在弹出的窗口中，使用键盘 `↑` `↓` 选择功能，按 `Enter` 确认即可。
+- Windows:
+    1. 打开 Rime 配置文件夹（`%APPDATA%\Rime`或小狼毫配置工具自定义目录）。
+    2. 你会看到一个名为 **`Rime配置助手.bat`** 的文件，**双击运行**它。
+    3. 在弹出的窗口中，使用键盘 `↑` `↓` 选择功能，按 `Enter` 确认即可。
 
 ### 3. 更新
 
@@ -47,6 +61,7 @@ Rime 是一款极具可玩性的输入法，但其复杂的配置文件劝退了
 在 Rime 的配置文件夹中：
 - macOS：删除`Rime配置助手.command`文件和`rime-mate-config`文件夹。
 - Linux：删除`Rime配置助手.desktop`文件和`rime-mate-config`文件夹。
+- Windows：删除`Rime配置助手.bat`文件和`rime-mate-config`文件夹。
 
 ## ❓ 常见问题
 
