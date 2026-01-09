@@ -13,9 +13,6 @@ detect_system() {
         Linux)
             echo "Linux"
             ;;
-        MINGW*|MSYS*|CYGWIN*)
-            echo "Windows"
-            ;;
         *)
             echo "UNKNOWN"
             ;;
@@ -52,34 +49,6 @@ detect_rime_dir() {
             exit 1
         fi
         ;;
-    Windows)
-        rime_dir=""
-        echo "🔍 正在检查Windows下的小狼毫(Rime)配置："
-
-        uninstall_reg_path="HKLM\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Weasel"
-        if reg query "$uninstall_reg_path" >/dev/null 2>&1; then
-            echo "   - 小狼毫是否安装? 是"
-        else
-            echo "   - 小狼毫是否安装? 否"
-            echo "❌ Windows 下未检测到小狼毫输入法，请先安装"
-            exit 1
-        fi
-
-        user_reg_path="HKCU\\Software\\Rime\\Weasel"
-        reg_value=$(reg query "$user_reg_path" /v "RimeUserDir" 2>/dev/null \
-            | grep -i "RimeUserDir" | awk '{print $NF}')
-
-        if [ -n "$reg_value" ] && [ -d "$reg_value" ]; then
-            echo "   - 注册表 RimeUserDir: $reg_value (存在? 是)"
-            rime_dir="$reg_value"
-        elif [ -n "$reg_value" ]; then
-            echo "   - 注册表 RimeUserDir: $reg_value (存在? 否，路径无效)"
-            exit 1
-        else
-            echo "❌ 请使用小狼毫配置工具选择自定义配置目录"
-            exit 1
-        fi
-        ;;
     *)
         echo "❌ 不支持的操作系统"
         exit 1
@@ -98,19 +67,13 @@ if [ "$system" = "Darwin" ]; then
     COMMAND_LINK="$RIME_DIR/Rime配置助手.command"
 elif [ "$system" = "Linux" ]; then
     COMMAND_LINK="$RIME_DIR/Rime配置助手.desktop"
-elif [ "$system" = "Windows" ]; then
-    COMMAND_LINK="$RIME_DIR/Rime配置助手.bat"
 else
     echo "❌ 不支持的操作系统"
     exit 1
 fi
 
 RIME_CONFIG_DIR="$RIME_DIR/rime-mate-config"
-if [ "$system" = "Windows" ]; then
-    BINARY_PATH="$RIME_CONFIG_DIR/$TOOL_NAME.exe"
-else
-    BINARY_PATH="$RIME_CONFIG_DIR/$TOOL_NAME"
-fi
+BINARY_PATH="$RIME_CONFIG_DIR/$TOOL_NAME"
 
 VERSION_FILE="$RIME_CONFIG_DIR/version"
 # =========================================
@@ -122,7 +85,6 @@ get_os_arch() {
     case "$system" in
         Darwin) os="darwin" ;;
         Linux) os="linux" ;;
-        Windows) os="windows" ;;
         *) echo "❌ 不支持的系统"; exit 1 ;;
     esac
 
@@ -132,11 +94,7 @@ get_os_arch() {
         *) echo "❌ 不支持的架构：$arch"; exit 1 ;;
     esac
 
-    if [ "$os" = "windows" ]; then
-        echo "${TOOL_NAME}-${os}-${arch}.exe"
-    else
-        echo "${TOOL_NAME}-${os}-${arch}"
-    fi
+    echo "${TOOL_NAME}-${os}-${arch}"
 }
 FILE_NAME="$(get_os_arch)"
 
@@ -187,12 +145,6 @@ Name=Rime配置助手
 Exec=sh -c 'cd "$RIME_DIR" && ./rime-mate-config/$TOOL_NAME'
 Terminal=true
 EOF
-    elif [ "$system" = "Windows" ]; then
-        cat <<EOF > "$COMMAND_LINK"
-@echo off
-cd /d "%~dp0"
-start rime-mate-config\\$TOOL_NAME.exe
-EOF
     fi
 
     chmod +x "$COMMAND_LINK"
@@ -203,5 +155,4 @@ echo "📂 正在打开 Rime 配置目录..."
 case "$system" in
     Darwin) open "$RIME_DIR" ;;
     Linux) command -v xdg-open >/dev/null && xdg-open "$RIME_DIR" ;;
-    Windows) explorer "$RIME_DIR" ;;
 esac
