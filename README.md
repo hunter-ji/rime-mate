@@ -34,7 +34,7 @@ Rime 是一款极具可玩性的输入法，但其复杂的配置文件劝退了
     2. 你会看到一个名为 **`Rime配置助手.command`** 的文件，**双击运行**它。
     3. 在弹出的窗口中，使用键盘 `↑` `↓` 选择功能，按 `Enter` 确认即可。
 - Linux:
-    1. 打开 Rime 配置文件夹（iBus: `~/.config/ibus/rime`， Fcitx5: `~/.config/fcitx5/rime`）。
+    1. 打开 Rime 配置文件夹（iBus: `~/.config/ibus/rime`， Fcitx5: `~/.local/share/fcitx5/rime`）。
     2. 你会看到一个名为 **`Rime配置助手.desktop`** 的文件，**双击运行**它。
     3. 在弹出的窗口中，使用键盘 `↑` `↓` 选择功能，按 `Enter` 确认即可。
 
