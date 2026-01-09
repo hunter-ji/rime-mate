@@ -102,7 +102,7 @@ LATEST_VERSION="$(curl -s "https://api.github.com/repos/$REPO/releases/latest" \
     | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p')"
 
 if [ -z "$LATEST_VERSION" ]; then
-    echo "⚠️ 版本信息获取失败，可能代理 IP 超过 GitHub API 请求限制，将尝试不使用代理获取版本信息"
+    echo "⚠️ 版本信息获取失败，可能是网络或代理问题，将尝试不使用代理获取版本信息"
     LATEST_VERSION="$(curl -s --noproxy "*" "https://api.github.com/repos/$REPO/releases/latest" \
         | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p')"
 fi
