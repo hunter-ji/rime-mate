@@ -32,8 +32,10 @@ jobs:
       - name: Run build script
         run: ./build.sh
 
-      - name: Copy setup.sh to output
-        run: cp setup.sh output/
+      - name: Copy setup script to output
+        run: | 
+          cp setup.sh output/
+          cp setup.ps1 output/
 
       - name: Create Draft Release
         uses: softprops/action-gh-release@v1
@@ -47,5 +49,6 @@ jobs:
             output/rime-mate-windows-amd64.exe
             output/rime-mate-windows-arm64.exe
             output/setup.sh
+            output/setup.ps1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
