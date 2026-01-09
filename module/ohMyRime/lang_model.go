@@ -35,7 +35,7 @@ func getCrossPlatformRimeDir() (string, error) {
 	case "linux":
 		paths := []string{
 			filepath.Join(home, ".config/ibus/rime"),
-			filepath.Join(home, ".config/fcitx5/rime"),
+			filepath.Join(home, ".local/share/fcitx5/rime"),
 		}
 		for _, p := range paths {
 			if _, err := os.Stat(p); err == nil {
