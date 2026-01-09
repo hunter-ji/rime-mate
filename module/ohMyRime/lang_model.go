@@ -3,10 +3,12 @@ package ohMyRime
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"rime-mate/util"
 	"runtime"
 	"slices"
+	"strings"
 
 	"github.com/goccy/go-yaml"
 )
@@ -49,10 +51,29 @@ func getCrossPlatformRimeDir() (string, error) {
 		}
 		return "", fmt.Errorf("未找到 Linux 下的 Rime 配置目录，请检查是否安装 iBus-Rime/Fcitx5-Rime")
 	case "windows":
-		path := filepath.Join(home, "AppData/Roaming/Rime")
+		cmd := exec.Command(
+			"reg",
+			"query",
+			`HKCU\Software\Rime\Weasel`,
+			"/v",
+			"RimeUserDir",
+		)
+		output, err := cmd.Output()
+		if err == nil {
+			fields := strings.Fields(string(output))
+			if len(fields) > 0 {
+				regPath := fields[len(fields)-1]
+				if _, err := os.Stat(regPath); err == nil {
+					return regPath, nil
+				}
+			}
+		}
+
+		path := filepath.Join(home, "AppData", "Roaming", "Rime")
 		if _, err := os.Stat(path); err == nil {
 			return path, nil
 		}
+
 		return "", fmt.Errorf("未找到 Windows 下的 Rime 配置目录")
 	default:
 		return "", fmt.Errorf("不支持的系统: %s", runtime.GOOS)
