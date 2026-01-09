@@ -153,7 +153,7 @@ fi
 # --- 步骤B: 在 Rime 配置目录生成“快捷方式” ---
 
 if [ ! -f "$COMMAND_LINK" ]; then
-    echo "🖥️ 正在 RIME 配置目录生成快捷方式..."
+    echo "🖥️ 正在 Rime 配置目录生成快捷方式..."
 
     if [ "$(uname -s)" = "Darwin" ]; then
         cat <<EOF > "$COMMAND_LINK"
