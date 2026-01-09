@@ -2,20 +2,50 @@ package ohMyRime
 
 import (
 	"fmt"
+	"github.com/goccy/go-yaml"
 	"os"
 	"path/filepath"
 	"rime-mate/util"
+	"runtime"
 	"slices"
-
-	"github.com/goccy/go-yaml"
 )
 
 func loadResourceURLs() (string, string) {
-	basePath := util.TransformPath("~/Library/Rime/")
-	langModelPath := filepath.Join(basePath, "wanxiang-lts-zh-hans.gram")
-	rimeMintCustomYamlPath := filepath.Join(basePath, "rime_mint.custom.yaml")
+	rimeDir, err := getCrossPlatformRimeDir()
+	if err != nil {
+		util.Error("获取RIME配置目录失败: " + err.Error())
+		rimeDir = util.TransformPath("~/Library/Rime/")
+	}
+
+	langModelPath := filepath.Join(rimeDir, "wanxiang-lts-zh-hans.gram")
+	rimeMintCustomYamlPath := filepath.Join(rimeDir, "rime_mint.custom.yaml")
 
 	return langModelPath, rimeMintCustomYamlPath
+}
+
+func getCrossPlatformRimeDir() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+
+	switch runtime.GOOS {
+	case "darwin":
+		return filepath.Join(home, "Library/Rime"), nil
+	case "linux":
+		paths := []string{
+			filepath.Join(home, ".config/ibus/rime"),
+			filepath.Join(home, ".local/share/fcitx5/rime"),
+		}
+		for _, p := range paths {
+			if _, err := os.Stat(p); err == nil {
+				return p, nil
+			}
+		}
+		return "", fmt.Errorf("未找到Linux下的RIME配置目录，请检查是否安装IBus-RIME/Fcitx5-RIME")
+	default:
+		return "", fmt.Errorf("不支持的系统: %s", runtime.GOOS)
+	}
 }
 
 func InstallLangModel() error {
@@ -151,13 +181,21 @@ func RemoveLangModel() error {
 		return nil
 	}
 
-	// 更新 config 中的 patch
-	config[patchIndex].Value = newPatchSlice
+	if len(newPatchSlice) == 0 {
+		// 如果 patch 为空，则从 config 中移除 patch 字段
+		config = append(config[:patchIndex], config[patchIndex+1:]...)
+	} else {
+		// 更新 config 中的 patch
+		config[patchIndex].Value = newPatchSlice
+	}
 
 	// 写入文件
-	data, err := yaml.Marshal(config)
-	if err != nil {
-		return err
+	var data []byte
+	if len(config) > 0 {
+		data, err = yaml.Marshal(config)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = os.WriteFile(rimeMintCustomYamlPath, data, 0644)
