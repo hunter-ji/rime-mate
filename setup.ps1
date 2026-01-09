@@ -35,8 +35,7 @@ $arch = switch ($env:PROCESSOR_ARCHITECTURE) {
     default { Write-Host "❌ 不支持的架构"; exit 1 }
 }
 
-# $fileName    = "$ToolName-windows-$arch.exe"
-$fileName    = "$ToolName-linux-$arch"
+$fileName    = "$ToolName-windows-$arch.exe"
 $downloadUrl = "$BaseUrl/$fileName"
 
 # ---------- 版本检测 ----------
