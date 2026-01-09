@@ -74,7 +74,7 @@ func getCrossPlatformRimeDir() (string, error) {
 			return path, nil
 		}
 
-		return "", fmt.Errorf("未找到 Windows 下的 Rime 配置目录")
+		return "", fmt.Errorf("未找到 Windows 下的小狼毫 (Weasel) Rime 配置目录")
 	default:
 		return "", fmt.Errorf("不支持的系统: %s", runtime.GOOS)
 	}
