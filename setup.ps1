@@ -55,7 +55,9 @@ try {
         $versionCheckOk = $true
         Write-Host "✅ 最新版本：$latestVersion"
     }
-} catch {}
+} catch {
+    Write-Warning "获取最新版本信息时出错：$($_.Exception.Message)"
+}
 
 if (-not $versionCheckOk) {
     Write-Host "⚠️ 无法获取版本信息，将执行强制安装"
