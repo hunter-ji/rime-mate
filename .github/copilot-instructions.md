@@ -213,6 +213,12 @@ go mod tidy
 
 # Vendor dependencies
 go mod vendor
+
+# Test build to verify compatibility
+go build -o /tmp/rime-mate-test .
+
+# If build succeeds, run the application to verify it works
+/tmp/rime-mate-test
 ```
 
 ## Additional Notes
