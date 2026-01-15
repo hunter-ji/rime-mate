@@ -1,0 +1,83 @@
+name: ci
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+  workflow_dispatch:
+
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
+    runs-on: ${{ matrix.os }}
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25.5'
+
+    - name: Go test
+      run: go test ./...
+
+    - name: Build binary for current platform
+      shell: bash
+      run: |
+        set -e
+        GOOS=$(go env GOOS)
+        GOARCH=$(go env GOARCH)
+        OUT="rime-mate-${GOOS}-${GOARCH}"
+        BUILD_DIR="${RUNNER_TEMP}/rime-mate-build"
+        mkdir -p "$BUILD_DIR"
+        CGO_ENABLED=0 GOOS="$GOOS" GOARCH="$GOARCH" go build -o "$BUILD_DIR/$OUT" .
+        echo "OUT_FILE=$BUILD_DIR/$OUT" >> "$GITHUB_ENV"
+        echo "BUILD_DIR=$BUILD_DIR" >> "$GITHUB_ENV"
+
+    - name: Start local file server
+      shell: bash
+      run: |
+        set -e
+        cd "$BUILD_DIR"
+        python3 -m http.server 8000 >/tmp/rime-http.log 2>&1 &
+        echo $! > /tmp/rime-http.pid
+
+    - name: Run setup.sh against local server
+      shell: bash
+      run: |
+        set -e
+        mkdir -p "$RUNNER_TEMP/rime-test"
+        TEST_BASE_URL="http://127.0.0.1:8000" \
+        TEST_RIME_DIR="$RUNNER_TEMP/rime-test" \
+        VERSION_OVERRIDE="dev-ci" \
+        CI_MODE=1 \
+        bash setup.sh
+
+    - name: Validate install artifacts
+      shell: bash
+      run: |
+        set -e
+        ls -l "$RUNNER_TEMP/rime-test/rime-mate-config"
+        test -f "$RUNNER_TEMP/rime-test/rime-mate-config/version"
+        test -x "$RUNNER_TEMP/rime-test/rime-mate-config/rime-mate"
+
+        # 检查是否存在匹配 Rime配置助手.* 的文件
+        shopt -s nullglob
+        files=("$RUNNER_TEMP/rime-test"/Rime配置助手.*)
+        if [ ${#files[@]} -eq 0 ]; then
+          echo "未找到 Rime配置助手 文件" >&2
+          exit 1
+        fi
+
+    - name: Stop local file server
+      if: always()
+      shell: bash
+      run: |
+        if [ -f /tmp/rime-http.pid ]; then
+          kill "$(cat /tmp/rime-http.pid)" || true
+        fi

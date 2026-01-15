@@ -5,7 +5,21 @@ REPO="hunter-ji/rime-mate"
 BASE_URL="https://github.com/$REPO/releases/latest/download"
 TOOL_NAME="rime-mate"
 
+# 以下变量仅用于 CI/本地自测
+TEST_BASE_URL="${TEST_BASE_URL:-}"      # 覆盖下载源，指向本地 HTTP 服务器
+TEST_RIME_DIR="${TEST_RIME_DIR:-}"      # 覆盖 RIME 目录，避免写入真实目录
+CI_MODE="${CI_MODE:-0}"                 # CI 模式下跳过交互（open/xattr 等）
+VERSION_OVERRIDE="${VERSION_OVERRIDE:-}" # 指定版本号，跳过 GitHub API 请求
+
 detect_rime_dir() {
+    if [ -n "$TEST_RIME_DIR" ]; then
+        # CI/测试模式：使用临时目录代替真实 RIME 路径
+        mkdir -p "$TEST_RIME_DIR"
+        echo "🔧 使用测试 RIME 目录：$TEST_RIME_DIR"
+        export RIME_DIR="$TEST_RIME_DIR"
+        return
+    fi
+
     home="$HOME"
     system="$(uname -s)"
 
@@ -84,7 +98,13 @@ get_os_arch() {
 
     echo "${TOOL_NAME}-${os}-${arch}"
 }
+
 FILE_NAME="$(get_os_arch)"
+# 仅当设置了测试源时才覆盖下载地址，默认保持生产 URL
+EFFECTIVE_BASE_URL="$BASE_URL"
+if [ -n "$TEST_BASE_URL" ]; then
+    EFFECTIVE_BASE_URL="$TEST_BASE_URL"
+fi
 
 # --- 步骤A: 环境检测与版本检查 ---
 MISSING_FILES=false
@@ -98,22 +118,32 @@ else
     echo "🔍 环境完整，正在检查更新..."
 fi
 
-LATEST_VERSION="$(curl -s "https://api.github.com/repos/$REPO/releases/latest" \
-    | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p')"
-
-if [ -z "$LATEST_VERSION" ]; then
-    echo "⚠️ 版本信息获取失败，可能是网络或代理问题，将尝试不使用代理获取版本信息"
-    LATEST_VERSION="$(curl -s --noproxy "*" "https://api.github.com/repos/$REPO/releases/latest" \
+# 如指定 VERSION_OVERRIDE，则直接使用指定版本；否则向 GitHub 查询最新版本
+if [ -n "$VERSION_OVERRIDE" ]; then
+    LATEST_VERSION="$VERSION_OVERRIDE"
+else
+    LATEST_VERSION="$(curl -s --max-time 15 "https://api.github.com/repos/$REPO/releases/latest" \
         | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p')"
+
+    if [ -z "$LATEST_VERSION" ]; then
+        echo "⚠️ 版本信息获取失败，可能是网络或代理问题，将尝试不使用代理获取版本信息"
+        LATEST_VERSION="$(curl -s --noproxy "*" --max-time 10 "https://api.github.com/repos/$REPO/releases/latest" \
+            | sed -n 's/.*"tag_name":[[:space:]]*"\([^"]*\)".*/\1/p')"
+    fi
 fi
 
 NEED_DOWNLOAD=false
 VERSION_TO_WRITE=""
 
 if [ -z "$LATEST_VERSION" ]; then
-    echo "⚠️ 无法获取最新版本信息，将尝试强制安装..."
-    NEED_DOWNLOAD=true
-    VERSION_TO_WRITE="unknown"
+    if [ "$MISSING_FILES" = true ]; then
+        echo "⚠️ 无法获取最新版本信息，且本地文件缺失，将尝试强制安装..."
+        NEED_DOWNLOAD=true
+        VERSION_TO_WRITE="unknown"
+    else
+        echo "⚠️ 无法获取最新版本信息，但检测到本地已安装。跳过更新，使用当前版本。"
+        NEED_DOWNLOAD=false
+    fi
 else
     VERSION_TO_WRITE="$LATEST_VERSION"
     if [ "$MISSING_FILES" = true ]; then
@@ -134,7 +164,7 @@ fi
 if [ "$NEED_DOWNLOAD" = true ]; then
     echo "⬇️ 正在下载 $FILE_NAME ..."
     mkdir -p "$RIME_CONFIG_DIR"
-    curl -L "$BASE_URL/$FILE_NAME" -o "$BINARY_PATH"
+    curl -L "$EFFECTIVE_BASE_URL/$FILE_NAME" -o "$BINARY_PATH"
 
     if [ ! -s "$BINARY_PATH" ]; then
         echo "❌ 下载失败或文件为空，请检查网络连接或服务器状态。"
@@ -145,7 +175,7 @@ if [ "$NEED_DOWNLOAD" = true ]; then
     echo "$VERSION_TO_WRITE" > "$VERSION_FILE"
     chmod +x "$BINARY_PATH"
 
-    if [ "$(uname -s)" = "Darwin" ]; then
+    if [ "$CI_MODE" != "1" ] && [ "$(uname -s)" = "Darwin" ]; then
         xattr -d com.apple.quarantine "$BINARY_PATH" 2>/dev/null
     fi
 fi
@@ -179,7 +209,7 @@ EOF
 
     chmod +x "$COMMAND_LINK"
 
-    if [ "$(uname -s)" = "Darwin" ]; then
+    if [ "$CI_MODE" != "1" ] && [ "$(uname -s)" = "Darwin" ]; then
         xattr -d com.apple.quarantine "$COMMAND_LINK" 2>/dev/null
     fi
 
@@ -193,14 +223,18 @@ EOF
 fi
 
 # --- 步骤C: 打开配置文件夹 ---
-echo "📂 正在打开 RIME 配置目录..."
-case "$(uname -s)" in
-    Darwin) open "$RIME_DIR" ;;
-    Linux)
-        if command -v xdg-open >/dev/null 2>&1; then
-            xdg-open "$RIME_DIR"
-        else
-            echo "⚠️ 未找到 xdg-open，无法自动打开文件夹，手动路径：$RIME_DIR"
-        fi
-        ;;
-esac
+if [ "$CI_MODE" = "1" ]; then
+    echo "ℹ️ CI 模式已跳过自动打开 RIME 配置目录"
+else
+    echo "📂 正在打开 RIME 配置目录..."
+    case "$(uname -s)" in
+        Darwin) open "$RIME_DIR" ;;
+        Linux)
+            if command -v xdg-open >/dev/null 2>&1; then
+                xdg-open "$RIME_DIR"
+            else
+                echo "⚠️ 未找到 xdg-open，无法自动打开文件夹，手动路径：$RIME_DIR"
+            fi
+            ;;
+    esac
+fi
